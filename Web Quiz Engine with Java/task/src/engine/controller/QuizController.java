@@ -31,12 +31,12 @@ public class QuizController {
 
     @GetMapping()
     public List<QuizResponseDto> getAll() {
-        return null;
+        return quizService.getAll();
     }
 
     @PostMapping("/{id}/solve")
-    public SolveResponseDto solveQuiz(@PathVariable("id") int quizId, @RequestParam int answer) {
-        return null;
+    public SolveResponseDto solveQuiz(@PathVariable("id") int quizId, @RequestParam Integer answer) {
+        return quizService.solve(quizId, answer);
     }
 
 }

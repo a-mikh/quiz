@@ -14,6 +14,12 @@ import java.util.Map;
 
 @Service
 public class QuizService {
+    private static final String CORRECT_FEEDBACK =
+            "Congratulations, you're right!";
+
+    private static final String WRONG_FEEDBACK =
+            "Wrong answer! Please, try again.";
+
     private Map<Integer, Quiz> quizzes = new HashMap<>();
     private int nextId = 1;
 
@@ -49,11 +55,24 @@ public class QuizService {
     }
 
     public List<QuizResponseDto> getAll() {
-        return null;
+        return quizzes.values()
+                .stream()
+                .map(this::toResponseDto)
+                .toList();
     }
 
     public SolveResponseDto solve(int quizId, int answer) {
-        return null;
+        Quiz quiz = quizzes.get(quizId);
+
+        if (quiz == null) {
+            throw new QuizNotFoundException();
+        }
+
+        if (quiz.getAnswer() == null || !quiz.getAnswer().equals(answer)) {
+            return new SolveResponseDto(false, WRONG_FEEDBACK);
+        }
+
+        return new  SolveResponseDto(true, CORRECT_FEEDBACK);
     }
 
     private QuizResponseDto toResponseDto(Quiz quiz) {
