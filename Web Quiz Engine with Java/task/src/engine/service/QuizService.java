@@ -2,15 +2,14 @@ package engine.service;
 
 import engine.dto.CreateQuizDto;
 import engine.dto.QuizResponseDto;
+import engine.dto.SolveRequestDto;
 import engine.dto.SolveResponseDto;
+import engine.exception.InvalidQuizException;
 import engine.exception.QuizNotFoundException;
 import engine.model.Quiz;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class QuizService {
@@ -24,20 +23,26 @@ public class QuizService {
     private int nextId = 1;
 
     public QuizResponseDto create(CreateQuizDto createQuizDto) {
-        List<String> options = createQuizDto.getOptions();
+        List<Integer> answers;
 
-        if (options == null) {
-            options = new ArrayList<>();
+        if (createQuizDto.getAnswer() == null) {
+            answers = new ArrayList<>();
         } else {
-            options = new ArrayList<>(options);
+            answers = new ArrayList<>(createQuizDto.getAnswer());
+        }
+
+        for (int answer : answers) {
+            if (answer > createQuizDto.getOptions().size() - 1 || answer < 0) {
+                throw new InvalidQuizException();
+            }
         }
 
         Quiz quiz = new Quiz(
                 nextId,
                 createQuizDto.getTitle(),
                 createQuizDto.getText(),
-                options,
-                createQuizDto.getAnswer());
+                createQuizDto.getOptions(),
+                answers);
         quizzes.put(quiz.getId(), quiz);
         nextId++;
 
@@ -61,22 +66,32 @@ public class QuizService {
                 .toList();
     }
 
-    public SolveResponseDto solve(int quizId, int answer) {
+    public SolveResponseDto solve(int quizId, SolveRequestDto solveRequest) {
         Quiz quiz = quizzes.get(quizId);
 
         if (quiz == null) {
             throw new QuizNotFoundException();
         }
 
-        if (quiz.getAnswer() == null || !quiz.getAnswer().equals(answer)) {
+        List<Integer> userAnswer = solveRequest.getAnswer() == null
+                ? new ArrayList<>()
+                : new ArrayList<>(solveRequest.getAnswer());
+
+        if (quiz.getAnswer().size() != userAnswer.size()) {
             return new SolveResponseDto(false, WRONG_FEEDBACK);
         }
 
-        return new  SolveResponseDto(true, CORRECT_FEEDBACK);
+        Set<Integer> userAnswerSet = new HashSet<>(userAnswer);
+
+        if (!userAnswerSet.containsAll(quiz.getAnswer())) {
+            return new SolveResponseDto(false, WRONG_FEEDBACK);
+        }
+
+        return new SolveResponseDto(true, CORRECT_FEEDBACK);
     }
 
     private QuizResponseDto toResponseDto(Quiz quiz) {
-        return new  QuizResponseDto(
+        return new QuizResponseDto(
                 quiz.getId(),
                 quiz.getTitle(),
                 quiz.getText(),

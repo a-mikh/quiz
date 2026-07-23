@@ -2,8 +2,10 @@ package engine.controller;
 
 import engine.dto.CreateQuizDto;
 import engine.dto.QuizResponseDto;
+import engine.dto.SolveRequestDto;
 import engine.dto.SolveResponseDto;
 import engine.service.QuizService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,15 +14,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/quizzes")
 public class QuizController {
-    private QuizService quizService;
+    private final QuizService quizService;
 
     @Autowired
     public QuizController(QuizService quizService) {
         this.quizService = quizService;
     }
 
-    @PostMapping()
-    public QuizResponseDto createQuiz(@RequestBody CreateQuizDto createQuizDto) {
+    @PostMapping
+    public QuizResponseDto createQuiz(@Valid @RequestBody CreateQuizDto createQuizDto) {
         return quizService.create(createQuizDto);
     }
 
@@ -29,14 +31,14 @@ public class QuizController {
         return quizService.getById(id);
     }
 
-    @GetMapping()
+    @GetMapping
     public List<QuizResponseDto> getAll() {
         return quizService.getAll();
     }
 
     @PostMapping("/{id}/solve")
-    public SolveResponseDto solveQuiz(@PathVariable("id") int quizId, @RequestParam Integer answer) {
-        return quizService.solve(quizId, answer);
+    public SolveResponseDto solveQuiz(@PathVariable("id") int quizId, @RequestBody SolveRequestDto solveRequest) {
+        return quizService.solve(quizId, solveRequest);
     }
 
 }
