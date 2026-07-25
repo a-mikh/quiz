@@ -1,15 +1,18 @@
 package engine.service;
 
-import engine.dto.CreateQuizDto;
-import engine.dto.QuizResponseDto;
-import engine.dto.SolveRequestDto;
-import engine.dto.SolveResponseDto;
-import engine.exception.InvalidQuizException;
-import engine.exception.QuizNotFoundException;
+import engine.dto.quiz.CreateQuizDto;
+import engine.dto.quiz.QuizResponseDto;
+import engine.dto.quiz.SolveRequestDto;
+import engine.dto.quiz.SolveResponseDto;
+import engine.exception.quiz.InvalidQuizException;
+import engine.exception.quiz.QuizNotFoundException;
 import engine.model.Quiz;
+import engine.repository.QuizRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.StreamSupport;
 
 @Service
 public class QuizService {
@@ -19,8 +22,12 @@ public class QuizService {
     private static final String WRONG_FEEDBACK =
             "Wrong answer! Please, try again.";
 
-    private Map<Integer, Quiz> quizzes = new HashMap<>();
-    private int nextId = 1;
+    private final QuizRepository quizRepository;
+
+    @Autowired
+    public QuizService(QuizRepository quizRepository) {
+        this.quizRepository = quizRepository;
+    }
 
     public QuizResponseDto create(CreateQuizDto createQuizDto) {
         List<Integer> answers;
@@ -38,40 +45,32 @@ public class QuizService {
         }
 
         Quiz quiz = new Quiz(
-                nextId,
                 createQuizDto.getTitle(),
                 createQuizDto.getText(),
                 createQuizDto.getOptions(),
                 answers);
-        quizzes.put(quiz.getId(), quiz);
-        nextId++;
+        Quiz savedQuiz = quizRepository.save(quiz);
 
-        return toResponseDto(quiz);
+        return toResponseDto(savedQuiz);
     }
 
     public QuizResponseDto getById(int id) {
-        Quiz quiz = quizzes.get(id);
-
-        if (quiz == null) {
-            throw new QuizNotFoundException();
-        }
+        Quiz quiz = quizRepository.findById(id)
+                .orElseThrow(QuizNotFoundException::new);
 
         return toResponseDto(quiz);
     }
 
     public List<QuizResponseDto> getAll() {
-        return quizzes.values()
-                .stream()
+        return StreamSupport.stream(quizRepository.findAll().spliterator(), false)
                 .map(this::toResponseDto)
                 .toList();
     }
 
     public SolveResponseDto solve(int quizId, SolveRequestDto solveRequest) {
-        Quiz quiz = quizzes.get(quizId);
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(QuizNotFoundException::new);
 
-        if (quiz == null) {
-            throw new QuizNotFoundException();
-        }
 
         List<Integer> userAnswer = solveRequest.getAnswer() == null
                 ? new ArrayList<>()

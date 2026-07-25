@@ -1,4 +1,4 @@
-package engine.dto;
+package engine.dto.quiz;
 
 import java.util.List;
 

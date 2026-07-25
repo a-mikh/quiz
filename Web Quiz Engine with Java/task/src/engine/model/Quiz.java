@@ -1,23 +1,38 @@
 package engine.model;
 
+import jakarta.persistence.*;
+
+import java.util.ArrayList;
 import java.util.List;
 
+@Entity
 public class Quiz {
-    private int id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
     private String title;
     private String text;
+    @ElementCollection
+    @OrderColumn(name = "option_position")
     private List<String> options;
+    @ElementCollection
     private List<Integer> answer;
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User author;
 
-    public Quiz(int id, String title, String text, List<String> options, List<Integer> answer) {
-        this.id = id;
-        this.title = title;
-        this.text = text;
-        this.options = options;
-        this.answer = answer;
+    protected Quiz() {
     }
 
-    public int getId() {
+    public Quiz(String title, String text, List<String> options, List<Integer> answer, User author) {
+        this.title = title;
+        this.text = text;
+        this.options = new ArrayList<>(options);
+        this.answer = answer;
+        this.author = author;
+    }
+
+    public Integer getId() {
         return id;
     }
 
@@ -51,5 +66,13 @@ public class Quiz {
 
     public void setAnswer(List<Integer> answer) {
         this.answer = answer;
+    }
+
+    public User getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(User author) {
+        this.author = author;
     }
 }

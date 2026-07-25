@@ -1,4 +1,4 @@
-package engine.dto;
+package engine.dto.quiz;
 
 public class SolveResponseDto {
     private boolean success;

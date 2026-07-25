@@ -1,12 +1,11 @@
 package engine.controller;
 
-import engine.dto.CreateQuizDto;
-import engine.dto.QuizResponseDto;
-import engine.dto.SolveRequestDto;
-import engine.dto.SolveResponseDto;
+import engine.dto.quiz.CreateQuizDto;
+import engine.dto.quiz.QuizResponseDto;
+import engine.dto.quiz.SolveRequestDto;
+import engine.dto.quiz.SolveResponseDto;
 import engine.service.QuizService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,7 +15,6 @@ import java.util.List;
 public class QuizController {
     private final QuizService quizService;
 
-    @Autowired
     public QuizController(QuizService quizService) {
         this.quizService = quizService;
     }

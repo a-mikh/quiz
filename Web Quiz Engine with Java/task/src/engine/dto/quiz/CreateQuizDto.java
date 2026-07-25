@@ -1,4 +1,4 @@
-package engine.dto;
+package engine.dto.quiz;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
