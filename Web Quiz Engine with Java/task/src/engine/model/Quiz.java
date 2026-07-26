@@ -1,6 +1,8 @@
 package engine.model;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,12 +14,13 @@ public class Quiz {
     private Integer id;
     private String title;
     private String text;
-    @ElementCollection
+    @Fetch(FetchMode.SUBSELECT)
+    @ElementCollection(fetch = FetchType.EAGER)
     @OrderColumn(name = "option_position")
     private List<String> options;
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<Integer> answer;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User author;
 
@@ -28,7 +31,7 @@ public class Quiz {
         this.title = title;
         this.text = text;
         this.options = new ArrayList<>(options);
-        this.answer = answer;
+        this.answer = new ArrayList<>(answer);
         this.author = author;
     }
 

@@ -5,9 +5,14 @@ import engine.dto.quiz.QuizResponseDto;
 import engine.dto.quiz.SolveRequestDto;
 import engine.dto.quiz.SolveResponseDto;
 import engine.exception.quiz.InvalidQuizException;
+import engine.exception.quiz.QuizAccessDeniedException;
 import engine.exception.quiz.QuizNotFoundException;
+import engine.exception.user.UserNotFoundException;
 import engine.model.Quiz;
+import engine.model.User;
 import engine.repository.QuizRepository;
+import engine.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,13 +28,18 @@ public class QuizService {
             "Wrong answer! Please, try again.";
 
     private final QuizRepository quizRepository;
+    private final UserRepository userRepository;
 
     @Autowired
-    public QuizService(QuizRepository quizRepository) {
+    public QuizService(QuizRepository quizRepository, UserRepository userRepository) {
         this.quizRepository = quizRepository;
+        this.userRepository = userRepository;
     }
 
-    public QuizResponseDto create(CreateQuizDto createQuizDto) {
+    public QuizResponseDto create(CreateQuizDto createQuizDto, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(UserNotFoundException::new);
+
         List<Integer> answers;
 
         if (createQuizDto.getAnswer() == null) {
@@ -48,7 +58,8 @@ public class QuizService {
                 createQuizDto.getTitle(),
                 createQuizDto.getText(),
                 createQuizDto.getOptions(),
-                answers);
+                answers,
+                user);
         Quiz savedQuiz = quizRepository.save(quiz);
 
         return toResponseDto(savedQuiz);
@@ -87,6 +98,18 @@ public class QuizService {
         }
 
         return new SolveResponseDto(true, CORRECT_FEEDBACK);
+    }
+
+    @Transactional
+    public void delete(int id, String userEmail) {
+        Quiz quiz =  quizRepository.findById(id)
+                .orElseThrow(QuizNotFoundException::new);
+
+        if (!quiz.getAuthor().getEmail().equals(userEmail)) {
+            throw new QuizAccessDeniedException();
+        }
+
+        quizRepository.delete(quiz);
     }
 
     private QuizResponseDto toResponseDto(Quiz quiz) {

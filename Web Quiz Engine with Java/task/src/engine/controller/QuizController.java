@@ -6,6 +6,8 @@ import engine.dto.quiz.SolveRequestDto;
 import engine.dto.quiz.SolveResponseDto;
 import engine.service.QuizService;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,8 +22,10 @@ public class QuizController {
     }
 
     @PostMapping
-    public QuizResponseDto createQuiz(@Valid @RequestBody CreateQuizDto createQuizDto) {
-        return quizService.create(createQuizDto);
+    public QuizResponseDto createQuiz(
+            @Valid @RequestBody CreateQuizDto createQuizDto,
+            Authentication authentication) {
+        return quizService.create(createQuizDto, authentication.getName());
     }
 
     @GetMapping("/{id}")
@@ -37,6 +41,16 @@ public class QuizController {
     @PostMapping("/{id}/solve")
     public SolveResponseDto solveQuiz(@PathVariable("id") int quizId, @RequestBody SolveRequestDto solveRequest) {
         return quizService.solve(quizId, solveRequest);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteQuiz(
+            @PathVariable int id,
+            Authentication authentication
+    ) {
+        quizService.delete(id, authentication.getName());
+
+        return ResponseEntity.noContent().build();
     }
 
 }
