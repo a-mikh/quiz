@@ -12,15 +12,21 @@ import engine.model.Quiz;
 import engine.model.User;
 import engine.repository.QuizRepository;
 import engine.repository.UserRepository;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-import java.util.stream.StreamSupport;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Service
 public class QuizService {
+    private static final int PAGE_SIZE = 10;
     private static final String CORRECT_FEEDBACK =
             "Congratulations, you're right!";
 
@@ -29,11 +35,16 @@ public class QuizService {
 
     private final QuizRepository quizRepository;
     private final UserRepository userRepository;
+    private final QuizCompletionService quizCompletionService;
 
-    @Autowired
-    public QuizService(QuizRepository quizRepository, UserRepository userRepository) {
+    public QuizService(
+            QuizRepository quizRepository,
+            UserRepository userRepository,
+            QuizCompletionService quizCompletionService
+    ) {
         this.quizRepository = quizRepository;
         this.userRepository = userRepository;
+        this.quizCompletionService = quizCompletionService;
     }
 
     public QuizResponseDto create(CreateQuizDto createQuizDto, String userEmail) {
@@ -72,13 +83,16 @@ public class QuizService {
         return toResponseDto(quiz);
     }
 
-    public List<QuizResponseDto> getAll() {
-        return StreamSupport.stream(quizRepository.findAll().spliterator(), false)
-                .map(this::toResponseDto)
-                .toList();
+    @Transactional(readOnly = true)
+    public Page<QuizResponseDto> getAll(int page) {
+        Sort sort = Sort.by(Sort.Direction.ASC, "id");
+        Pageable quizzesPageable = PageRequest.of(page, PAGE_SIZE, sort);
+
+        return quizRepository.findAll(quizzesPageable).map(this::toResponseDto);
     }
 
-    public SolveResponseDto solve(int quizId, SolveRequestDto solveRequest) {
+    @Transactional
+    public SolveResponseDto solve(int quizId, String email, SolveRequestDto solveRequest) {
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(QuizNotFoundException::new);
 
@@ -97,12 +111,13 @@ public class QuizService {
             return new SolveResponseDto(false, WRONG_FEEDBACK);
         }
 
+        quizCompletionService.recordSuccessfulCompletion(quizId, email);
         return new SolveResponseDto(true, CORRECT_FEEDBACK);
     }
 
     @Transactional
     public void delete(int id, String userEmail) {
-        Quiz quiz =  quizRepository.findById(id)
+        Quiz quiz = quizRepository.findById(id)
                 .orElseThrow(QuizNotFoundException::new);
 
         if (!quiz.getAuthor().getEmail().equals(userEmail)) {

@@ -4,21 +4,26 @@ import engine.dto.quiz.CreateQuizDto;
 import engine.dto.quiz.QuizResponseDto;
 import engine.dto.quiz.SolveRequestDto;
 import engine.dto.quiz.SolveResponseDto;
+import engine.dto.quiz_completion.QuizCompletionResponseDto;
+import engine.service.QuizCompletionService;
 import engine.service.QuizService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/quizzes")
 public class QuizController {
     private final QuizService quizService;
+    private final QuizCompletionService quizCompletionService;
 
-    public QuizController(QuizService quizService) {
+    public QuizController(QuizService quizService,  QuizCompletionService quizCompletionService) {
         this.quizService = quizService;
+        this.quizCompletionService = quizCompletionService;
     }
 
     @PostMapping
@@ -34,13 +39,17 @@ public class QuizController {
     }
 
     @GetMapping
-    public List<QuizResponseDto> getAll() {
-        return quizService.getAll();
+    public Page<QuizResponseDto> getAll(@RequestParam(defaultValue = "0") @Min(0) int page) {
+        return quizService.getAll(page);
     }
 
     @PostMapping("/{id}/solve")
-    public SolveResponseDto solveQuiz(@PathVariable("id") int quizId, @RequestBody SolveRequestDto solveRequest) {
-        return quizService.solve(quizId, solveRequest);
+    public SolveResponseDto solveQuiz(
+            @PathVariable("id") int quizId,
+            @RequestBody SolveRequestDto solveRequest,
+            Authentication authentication
+    ) {
+        return quizService.solve(quizId, authentication.getName(), solveRequest);
     }
 
     @DeleteMapping("/{id}")
@@ -51,6 +60,14 @@ public class QuizController {
         quizService.delete(id, authentication.getName());
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/completed")
+    public Page<QuizCompletionResponseDto> getCompletedQuizzes(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            Authentication authentication
+    ) {
+        return quizCompletionService.getCompletionsByUser(authentication.getName(), page);
     }
 
 }
