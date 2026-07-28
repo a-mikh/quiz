@@ -1,6 +1,7 @@
 package com.anton.webquizengine.integration;
 
 import com.anton.webquizengine.model.User;
+import com.anton.webquizengine.repository.QuizCompletionRepository;
 import com.anton.webquizengine.repository.QuizRepository;
 import com.anton.webquizengine.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,15 +15,15 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class QuizIntegrationTest {
+public class QuizCreationIntegrationTest {
     private static final String VALID_QUIZ_REQUEST = """
             {
               "title": "test title",
@@ -42,16 +43,20 @@ class QuizIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private QuizCompletionRepository quizCompletionRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setup() {
+        quizCompletionRepository.deleteAll();
         quizRepository.deleteAll();
         userRepository.deleteAll();
     }
 
     @Test
-    void shouldReturn401ForUnauthorizedUser() throws Exception {
+    void shouldReturn401WhenCreatingQuizWithoutAuthentication() throws Exception {
         mockMvc.perform(post("/api/quizzes")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(VALID_QUIZ_REQUEST))
@@ -256,6 +261,7 @@ class QuizIntegrationTest {
                 .andExpect(jsonPath("$.answer").doesNotExist());
 
         assertThat(quizRepository.count()).isOne();
+        assertThat(quizRepository.findAll().get(0).getOptions()).containsExactly("1", "2");
     }
 
     @Test
